@@ -21,22 +21,29 @@ export async function analyzeUrl(input: string): Promise<SeoAnalysis> {
   if (!response.ok) {
     const payload = (await safeJson(response)) ?? {}
     const message =
-      typeof payload.error === 'string'
-        ? payload.error
+      typeof payload['error'] === 'string'
+        ? (payload['error'] as string)
         : 'Analysis failed.'
 
-    throw new AnalyzeError(message, payload.details)
+    throw new AnalyzeError(message, payload['details'])
   }
 
   const data = await response.json()
   return data as SeoAnalysis
 }
 
-async function safeJson(response: Response): Promise<any | undefined> {
+async function safeJson(
+  response: Response
+): Promise<Record<string, unknown> | undefined> {
   try {
-    return await response.json()
+    const value = await response.json()
+    return isRecord(value) ? value : undefined
   } catch {
     return undefined
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 

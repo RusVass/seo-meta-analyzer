@@ -26,7 +26,9 @@ SEO Meta Analyzer audits public URLs to evaluate critical SEO meta tags, Open Gr
 │   ├── components/    # Summary cards, previews, issues list, section details, URL form
 │   ├── lib/           # Client-side fetcher and status utilities
 │   └── main.tsx       # Vite entry point
+├── api/               # Serverless functions for deployment targets (e.g., Vercel)
 ├── server/            # Express API that performs the analysis
+│   ├── analysis-service.ts
 │   └── index.ts
 ├── shared/            # Domain types reused on both sides
 ├── public/            # Static assets served by Vite
@@ -78,11 +80,47 @@ Automated tests are not yet configured.
 ## Environment Variables
 
 - `PORT` (optional): Port for the Express API. Defaults to `5174`.
+- `ANALYZER_ALLOW_ORIGIN` (optional): CORS allowlist for Vercel serverless API. Defaults to `*`.
 
 ## Known Limitations / Future Improvements
 
-- Production deployment requires wiring the static frontend and the API manually; no single deployment script is provided.
 - No caching or rate limiting around remote fetches; heavy usage may hit upstream rate limits.
 - Lacks authentication and persistence; every request performs a fresh crawl.
 - No automated tests or CI pipeline; regressions must be caught manually.
 - Does not yet validate structured data (JSON-LD, microdata) beyond meta tags.
+
+## Deploying to Vercel
+
+1. Install the Vercel CLI and authenticate:
+
+   ```
+   npm install -g vercel
+   vercel login
+   ```
+
+2. From the project root, link the repository to a Vercel project (create a new one if prompted):
+
+   ```
+   vercel link
+   ```
+
+3. Deploy:
+
+   ```
+   vercel --prod
+   ```
+
+   Vercel uses the included `vercel.json` to:
+
+   - Install dependencies (`npm install`).
+   - Build the static frontend (`npm run build` → emits to `dist`).
+   - Expose API endpoints via the `api/` directory with the Node.js 22 runtime.
+   - Rewrite unknown routes back to `index.html` for SPA routing while keeping `/api/*` untouched.
+
+4. To test locally with the same configuration, run:
+
+   ```
+   vercel dev
+   ```
+
+   This proxies Vite’s dev server and the Express API exactly as Vercel will in production. Use `npm run dev` for the original dual-server workflow without Vercel.
